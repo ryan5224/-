@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>補習班餐費與訂餐明細查詢</title>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f6f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 16px; }
+    .card { background: #ffffff; width: 100%; max-width: 440px; padding: 28px 24px; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    h2 { text-align: center; margin-top: 0; color: #2d3748; font-size: 22px; }
+    .subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 24px; }
+    .input-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; color: #4a5568; font-size: 14px; }
+    input[type="text"] { width: 100%; padding: 12px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 18px; text-align: center; letter-spacing: 4px; }
+    input[type="text"]:focus { outline: none; border-color: #3182ce; box-shadow: 0 0 0 3px rgba(49,130,206,0.15); }
+    button { width: 100%; background: #3182ce; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #2b6cb0; }
+    .result-box { margin-top: 24px; padding: 20px 16px; background: #ebf8ff; border-radius: 8px; border: 1px solid #bee3f8; display: none; }
+    .result-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 15px; color: #2d3748; }
+    .result-item:last-child { margin-bottom: 0; }
+    .result-item .label { color: #4a5568; }
+    .result-item .val { font-weight: bold; }
+    .balance { color: #dd6b20; font-size: 18px; }
+    .dates-container { margin-top: 14px; padding-top: 12px; border-top: 1px dashed #bee3f8; }
+    .dates-title { font-size: 14px; font-weight: 600; color: #2b6cb0; margin-bottom: 8px; }
+    .date-badge-wrap { display: flex; flex-wrap: wrap; gap: 6px; max-height: 140px; overflow-y: auto; padding-right: 4px; }
+    .date-badge { background: #ffffff; border: 1px solid #90cdf4; color: #2c5282; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+    .no-dates { color: #a0aec0; font-size: 13px; font-style: italic; }
+    .error-msg { margin-top: 16px; color: #e53e3e; text-align: center; font-size: 14px; display: none; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>餐費與訂餐明細查詢</h2>
+  <div class="subtitle">請輸入繳費帳戶之銀行帳號末五碼</div>
+  <div class="input-group">
+    <label for="bankCode">銀行帳號末五碼</label>
+    <input type="text" id="bankCode" maxlength="5" placeholder="例如：12345" inputmode="numeric" autocomplete="off">
+  </div>
+  <button onclick="handleSearch()">查 詢</button>
+  <div id="errorMsg" class="error-msg">查無此帳號紀錄，請確認末五碼是否正確</div>
+  <div id="resultBox" class="result-box">
+    <div class="result-item"><span class="label">學生姓名：</span><span class="val" id="resName">-</span></div>
+    <div class="result-item"><span class="label">已訂餐天數：</span><span class="val" id="resDays">-</span></div>
+    <div class="result-item"><span class="label">已扣金額：</span><span class="val" id="resUsed">-</span></div>
+    <div class="result-item"><span class="label">剩餘餘額：</span><span class="val balance" id="resBalance">-</span></div>
+    <div class="dates-container">
+      <div class="dates-title">已訂餐日期明細：</div>
+      <div class="date-badge-wrap" id="resDatesWrap"></div>
+    </div>
+  </div>
+</div>
+<script>
+  let studentsData = [];
+  window.onload = function() {
+    fetch('data.json?t=' + new Date().getTime())
+      .then(res => res.json())
+      .then(data => { studentsData = data; })
+      .catch(err => console.error("載入失敗", err));
+  };
+  function handleSearch() {
+    const inputVal = document.getElementById('bankCode').value.trim();
+    const resultBox = document.getElementById('resultBox');
+    const errorMsg = document.getElementById('errorMsg');
+    const datesWrap = document.getElementById('resDatesWrap');
+    if (!inputVal || inputVal.length !== 5) {
+      alert('請輸入完整的銀行末五碼（5 位數字）');
+      return;
+    }
+    const match = studentsData.find(item => String(item.bank_last5).trim() === inputVal);
+    if (match) {
+      const dates = match.dates || [];
+      document.getElementById('resName').textContent = match.name;
+      document.getElementById('resDays').textContent = dates.length + ' 天';
+      document.getElementById('resUsed').textContent = Number(match.used).toLocaleString() + ' 元';
+      document.getElementById('resBalance').textContent = Number(match.balance).toLocaleString() + ' 元';
+      datesWrap.innerHTML = '';
+      if (dates.length > 0) {
+        dates.forEach(d => {
+          const badge = document.createElement('span');
+          badge.className = 'date-badge';
+          badge.textContent = d;
+          datesWrap.appendChild(badge);
+        });
+      } else {
+        datesWrap.innerHTML = '<span class="no-dates">目前尚無訂餐紀錄</span>';
+      }
+      errorMsg.style.display = 'none';
+      resultBox.style.display = 'block';
+    } else {
+      resultBox.style.display = 'none';
+      errorMsg.style.display = 'block';
+    }
+  }
+  document.getElementById('bankCode').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') handleSearch();
+  });
+</script>
+</body>
+</html>
