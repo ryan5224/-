@@ -7,7 +7,7 @@
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 24px 16px; }
-    .card { background: #ffffff; width: 100%; max-width: 480px; padding: 28px 22px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); }
+    .card { background: #ffffff; width: 100%; max-width: 480px; padding: 28px 22px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,5,5,5); }
     h2 { text-align: center; margin-top: 0; color: #1a365d; font-size: 22px; }
     .subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 22px; }
     .input-group { margin-bottom: 18px; }
@@ -17,7 +17,7 @@
     button { width: 100%; background: #2b6cb0; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
     button:hover { background: #2c5282; }
     
-    /* 查尋結果區塊（支援多筆資料卡片） */
+    /* 查詢結果區塊（支援多筆資料卡片） */
     #resultsContainer { margin-top: 20px; display: none; }
     .student-card { background: #ebf8ff; border-radius: 10px; border: 1px solid #bee3f8; padding: 18px 16px; margin-bottom: 16px; }
     .card-header-badge { display: inline-block; background: #2b6cb0; color: white; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; }
@@ -27,7 +27,7 @@
     .result-item .val { font-weight: bold; }
     
     .money-paid { color: #2b6cb0; }
-    .money-balance { color: #dd6b20; font-size: 16px; }
+    .money-refund { color: #dd6b20; font-size: 16px; }
     .diet-val { color: #e53e3e; font-weight: 600; }
     
     .divider { border: 0; border-top: 1px dashed #bee3f8; margin: 12px 0; }
@@ -58,7 +58,7 @@
 
   <div id="errorMsg" class="error-msg">查無此帳號紀錄，請確認末五碼是否正確</div>
 
-  <!-- 查尋結果掛載容器 -->
+  <!-- 查詢結果掛載容器 -->
   <div id="resultsContainer"></div>
 </div>
 
@@ -83,7 +83,7 @@
       return;
     }
 
-    // 關鍵修改：使用 .filter() 找出「所有」符合末五碼的資料，而不是只找第一筆
+    // 支援同一末五碼有多筆紀錄
     const matches = studentsData.filter(item => String(item.bank_last5).trim() === inputVal);
 
     if (matches && matches.length > 0) {
@@ -104,7 +104,7 @@
           badgesHtml = '<span class="no-dates">目前尚無登記訂餐日期</span>';
         }
 
-        // 如果同一帳號查出多筆，顯示「第 N 筆 / 孩子」標籤
+        // 如果同一帳號查出多筆，顯示「第 N 位登記學生」標籤
         const badgeHeader = matches.length > 1 
           ? `<div class="card-header-badge">第 ${index + 1} 位登記學生</div>` 
           : '';
@@ -137,7 +137,7 @@
             </div>
             <div class="result-item">
               <span class="label">請假應退款項：</span>
-              <span class="val money-balance">${(Number(item.balance) || 0).toLocaleString()} 元</span>
+              <span class="val money-refund">${(Number(item.balance) || 0).toLocaleString()} 元</span>
             </div>
 
             <div class="dates-container">
