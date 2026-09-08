@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>國二公校開學訂餐明細查詢</title>
+  <title>國二訂餐明細查詢</title>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: #f0f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 16px; }
-    .card { background: #ffffff; width: 100%; max-width: 460px; padding: 28px 22px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    body { background-color: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 24px 16px; }
+    .card { background: #ffffff; width: 100%; max-width: 480px; padding: 28px 22px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); }
     h2 { text-align: center; margin-top: 0; color: #1a365d; font-size: 22px; }
     .subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 22px; }
     .input-group { margin-bottom: 18px; }
@@ -17,8 +17,12 @@
     button { width: 100%; background: #2b6cb0; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
     button:hover { background: #2c5282; }
     
-    .result-box { margin-top: 22px; padding: 18px 16px; background: #ebf8ff; border-radius: 10px; border: 1px solid #bee3f8; display: none; }
+    /* 查尋結果區塊（支援多筆資料卡片） */
+    #resultsContainer { margin-top: 20px; display: none; }
+    .student-card { background: #ebf8ff; border-radius: 10px; border: 1px solid #bee3f8; padding: 18px 16px; margin-bottom: 16px; }
+    .card-header-badge { display: inline-block; background: #2b6cb0; color: white; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; }
     .result-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 15px; color: #2d3748; }
+    .result-item:last-child { margin-bottom: 0; }
     .result-item .label { color: #4a5568; }
     .result-item .val { font-weight: bold; }
     
@@ -26,14 +30,13 @@
     .money-balance { color: #dd6b20; font-size: 16px; }
     .diet-val { color: #e53e3e; font-weight: 600; }
     
-    /* 分隔線 */
     .divider { border: 0; border-top: 1px dashed #bee3f8; margin: 12px 0; }
 
     /* 日期清單標籤區 */
     .dates-container { margin-top: 10px; }
     .dates-title { font-size: 14px; font-weight: 600; color: #2b6cb0; margin-bottom: 10px; }
     .date-badge-wrap { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow-y: auto; padding-right: 2px; }
-    .date-badge { background: #ffffff; border: 1px solid #90cdf4; color: #2c5282; padding: 5px 9px; border-radius: 6px; font-size: 13px; font-weight: 500; }
+    .date-badge { background: #ffffff; border: 1px solid #90cdf4; color: #2c5282; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-weight: 500; }
     .date-badge.exam { background: #fffaf0; border-color: #fbd38d; color: #c05621; }
     .no-dates { color: #a0aec0; font-size: 13px; font-style: italic; }
 
@@ -43,11 +46,11 @@
 <body>
 
 <div class="card">
-  <h2>國二公校開學訂餐明細查詢</h2>
-  <div class="subtitle">請輸入表單填寫之「匯款末五碼」</div>
+  <h2>國二訂餐明細查詢</h2>
+  <div class="subtitle">請輸入表單填寫之「匯款帳號末五碼」</div>
 
   <div class="input-group">
-    <label for="bankCode">匯款末五碼（或登記末五碼）</label>
+    <label for="bankCode">匯款末五碼</label>
     <input type="text" id="bankCode" placeholder="例如：01412" autocomplete="off">
   </div>
 
@@ -55,95 +58,102 @@
 
   <div id="errorMsg" class="error-msg">查無此帳號紀錄，請確認末五碼是否正確</div>
 
-  <div id="resultBox" class="result-box">
-    <div class="result-item">
-      <span class="label">小朋友姓名：</span>
-      <span class="val" id="resName">-</span>
-    </div>
-    <div class="result-item">
-      <span class="label">飲食禁忌：</span>
-      <span class="val diet-val" id="resDiet">-</span>
-    </div>
-    <div class="result-item">
-      <span class="label">總訂餐餐數：</span>
-      <span class="val" id="resCount">-</span>
-    </div>
-    
-    <hr class="divider">
-    
-    <div class="result-item">
-      <span class="label">應繳金額：</span>
-      <span class="val" id="resTotalFee">-</span>
-    </div>
-    <div class="result-item">
-      <span class="label">已繳金額：</span>
-      <span class="val money-paid" id="resPaid">-</span>
-    </div>
-    <div class="result-item">
-      <span class="label">剩餘應繳/餘額：</span>
-      <span class="val money-balance" id="resBalance">-</span>
-    </div>
-
-    <!-- 訂餐日期明細 -->
-    <div class="dates-container">
-      <hr class="divider">
-      <div class="dates-title">已登記訂餐日期明細：</div>
-      <div class="date-badge-wrap" id="resDatesWrap"></div>
-    </div>
-  </div>
+  <!-- 查尋結果掛載容器 -->
+  <div id="resultsContainer"></div>
 </div>
 
 <script>
   let studentsData = [];
 
+  // 防止快取，加入時間戳記
   window.onload = function() {
     fetch('data.json?t=' + new Date().getTime())
       .then(res => res.json())
       .then(data => { studentsData = data; })
-      .catch(err => console.error("載入失敗", err));
+      .catch(err => console.error("資料載入失敗", err));
   };
 
   function handleSearch() {
     const inputVal = document.getElementById('bankCode').value.trim();
-    const resultBox = document.getElementById('resultBox');
+    const container = document.getElementById('resultsContainer');
     const errorMsg = document.getElementById('errorMsg');
-    const datesWrap = document.getElementById('resDatesWrap');
 
     if (!inputVal) {
       alert('請輸入匯款末五碼');
       return;
     }
 
-    const match = studentsData.find(item => String(item.bank_last5).trim() === inputVal);
+    // 關鍵修改：使用 .filter() 找出「所有」符合末五碼的資料，而不是只找第一筆
+    const matches = studentsData.filter(item => String(item.bank_last5).trim() === inputVal);
 
-    if (match) {
-      const dates = match.dates || [];
-      
-      document.getElementById('resName').textContent = match.name;
-      document.getElementById('resDiet').textContent = match.diet || '無特殊禁忌';
-      document.getElementById('resCount').textContent = (match.count || dates.length) + ' 餐';
-      
-      document.getElementById('resTotalFee').textContent = (Number(match.total_fee) || 0).toLocaleString() + ' 元';
-      document.getElementById('resPaid').textContent = (Number(match.paid) || 0).toLocaleString() + ' 元';
-      document.getElementById('resBalance').textContent = (Number(match.balance) || 0).toLocaleString() + ' 元';
-      
-      // 產生日期標籤
-      datesWrap.innerHTML = '';
-      if (dates.length > 0) {
-        dates.forEach(d => {
-          const badge = document.createElement('span');
-          badge.className = d.includes('考衝') ? 'date-badge exam' : 'date-badge';
-          badge.textContent = d;
-          datesWrap.appendChild(badge);
-        });
-      } else {
-        datesWrap.innerHTML = '<span class="no-dates">目前尚無登記訂餐日期</span>';
-      }
-
+    if (matches && matches.length > 0) {
       errorMsg.style.display = 'none';
-      resultBox.style.display = 'block';
+      container.innerHTML = ''; // 清空先前的查詢結果
+
+      matches.forEach((item, index) => {
+        const dates = item.dates || [];
+        
+        // 產生日期標籤 HTML
+        let badgesHtml = '';
+        if (dates.length > 0) {
+          badgesHtml = dates.map(d => {
+            const isExam = d.includes('考衝') ? 'date-badge exam' : 'date-badge';
+            return `<span class="${isExam}">${d}</span>`;
+          }).join('');
+        } else {
+          badgesHtml = '<span class="no-dates">目前尚無登記訂餐日期</span>';
+        }
+
+        // 如果同一帳號查出多筆，顯示「第 N 筆 / 孩子」標籤
+        const badgeHeader = matches.length > 1 
+          ? `<div class="card-header-badge">第 ${index + 1} 位登記學生</div>` 
+          : '';
+
+        const cardHtml = `
+          <div class="student-card">
+            ${badgeHeader}
+            <div class="result-item">
+              <span class="label">小朋友姓名：</span>
+              <span class="val">${item.name || '-'}</span>
+            </div>
+            <div class="result-item">
+              <span class="label">飲食禁忌：</span>
+              <span class="val diet-val">${item.diet || '無特殊禁忌'}</span>
+            </div>
+            <div class="result-item">
+              <span class="label">總訂餐餐數：</span>
+              <span class="val" style="color:#dd6b20;">${item.count || dates.length} 餐</span>
+            </div>
+            
+            <hr class="divider">
+            
+            <div class="result-item">
+              <span class="label">應繳金額：</span>
+              <span class="val">${(Number(item.total_fee) || 0).toLocaleString()} 元</span>
+            </div>
+            <div class="result-item">
+              <span class="label">已繳金額：</span>
+              <span class="val money-paid">${(Number(item.paid) || 0).toLocaleString()} 元</span>
+            </div>
+            <div class="result-item">
+              <span class="label">剩餘應繳/餘額：</span>
+              <span class="val money-balance">${(Number(item.balance) || 0).toLocaleString()} 元</span>
+            </div>
+
+            <div class="dates-container">
+              <hr class="divider">
+              <div class="dates-title">已登記訂餐日期明細：</div>
+              <div class="date-badge-wrap">${badgesHtml}</div>
+            </div>
+          </div>
+        `;
+
+        container.insertAdjacentHTML('beforeend', cardHtml);
+      });
+
+      container.style.display = 'block';
     } else {
-      resultBox.style.display = 'none';
+      container.style.display = 'none';
       errorMsg.style.display = 'block';
     }
   }
