@@ -7,15 +7,22 @@
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: #f0f4f8; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; padding: 24px 16px; }
-    .card { background: #ffffff; width: 100%; max-width: 480px; padding: 28px 22px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,5,5,5); }
+    .card { background: #ffffff; width: 100%; max-width: 480px; padding: 28px 22px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,5,5,0.08); }
     h2 { text-align: center; margin-top: 0; color: #1a365d; font-size: 22px; }
-    .subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 22px; }
+    .subtitle { text-align: center; color: #718096; font-size: 14px; margin-bottom: 18px; }
+    
+    /* 階段切換按鈕列樣式 */
+    .phase-switch { display: flex; background: #e2e8f0; border-radius: 8px; padding: 4px; margin-bottom: 20px; }
+    .phase-btn { flex: 1; background: transparent; border: none; padding: 10px; font-size: 14px; font-weight: 600; color: #4a5568; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .phase-btn.active { background: #ffffff; color: #2b6cb0; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+
     .input-group { margin-bottom: 18px; }
     label { display: block; margin-bottom: 8px; font-weight: 600; color: #2d3748; font-size: 14px; }
     input[type="text"] { width: 100%; padding: 12px; border: 1.5px solid #cbd5e0; border-radius: 8px; font-size: 18px; text-align: center; letter-spacing: 2px; }
     input[type="text"]:focus { outline: none; border-color: #3182ce; box-shadow: 0 0 0 3px rgba(49,130,206,0.15); }
-    button { width: 100%; background: #2b6cb0; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-    button:hover { background: #2c5282; }
+    
+    .search-btn { width: 100%; background: #2b6cb0; color: white; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    .search-btn:hover { background: #2c5282; }
     
     /* 查詢結果區塊（支援多筆資料卡片） */
     #resultsContainer { margin-top: 20px; display: none; }
@@ -47,14 +54,20 @@
 
 <div class="card">
   <h2>國二訂餐明細查詢</h2>
-  <div class="subtitle">請輸入表單填寫之「匯款帳號末五碼」</div>
+  <div class="subtitle">請選擇查詢項目並輸入「匯款帳號末五碼」</div>
+
+  <!-- 階段切換按鈕 -->
+  <div class="phase-switch">
+    <button type="button" class="phase-btn active" id="btnPhase2" onclick="switchPhase('phase2')">第二段費用查詢</button>
+    <button type="button" class="phase-btn" id="btnPhase1" onclick="switchPhase('phase1')">第一段費用查詢</button>
+  </div>
 
   <div class="input-group">
     <label for="bankCode">匯款末五碼</label>
     <input type="text" id="bankCode" placeholder="例如：01412" autocomplete="off">
   </div>
 
-  <button onclick="handleSearch()">查 詢</button>
+  <button class="search-btn" onclick="handleSearch()">查 詢</button>
 
   <div id="errorMsg" class="error-msg">查無此帳號紀錄，請確認末五碼是否正確</div>
 
@@ -63,15 +76,45 @@
 </div>
 
 <script>
-  let studentsData = [];
+  let currentPhase = 'phase2'; // 預設為第二段
+  let dataPhase2 = [];
+  let dataPhase1 = [];
 
-  // 防止快取，加入時間戳記
+  // 頁面載入時同時讀取兩份資料檔（防止快取加入時間戳記）
   window.onload = function() {
-    fetch('data.json?t=' + new Date().getTime())
+    const timestamp = new Date().getTime();
+    
+    // 讀取第二段資料
+    fetch('data.json?t=' + timestamp)
       .then(res => res.json())
-      .then(data => { studentsData = data; })
-      .catch(err => console.error("資料載入失敗", err));
+      .then(data => { dataPhase2 = data; })
+      .catch(err => console.error("第二段資料載入失敗", err));
+
+    // 讀取第一段資料（對應檔名可依需求調整，此處設為 data_phase1.json）
+    fetch('data_phase1.json?t=' + timestamp)
+      .then(res => res.json())
+      .then(data => { dataPhase1 = data; })
+      .catch(err => console.error("第一段資料載入失敗（若尚無檔案可忽略）", err));
   };
+
+  // 切換查詢階段
+  function switchPhase(phase) {
+    currentPhase = phase;
+    const btnPhase2 = document.getElementById('btnPhase2');
+    const btnPhase1 = document.getElementById('btnPhase1');
+    
+    if (phase === 'phase2') {
+      btnPhase2.classList.add('active');
+      btnPhase1.classList.remove('active');
+    } else {
+      btnPhase1.classList.add('active');
+      btnPhase2.classList.remove('active');
+    }
+    
+    // 切換時若已有輸入內容，可選擇清空或保留結果（此處自動隱館舊結果避免混淆）
+    document.getElementById('resultsContainer').style.display = 'none';
+    document.getElementById('errorMsg').style.display = 'none';
+  }
 
   function handleSearch() {
     const inputVal = document.getElementById('bankCode').value.trim();
@@ -83,8 +126,11 @@
       return;
     }
 
+    // 依照當前選擇的階段決定要搜尋哪一個資料陣列
+    const activeDataset = (currentPhase === 'phase2') ? dataPhase2 : dataPhase1;
+
     // 支援同一末五碼有多筆紀錄
-    const matches = studentsData.filter(item => String(item.bank_last5).trim() === inputVal);
+    const matches = activeDataset.filter(item => String(item.bank_last5).trim() === inputVal);
 
     if (matches && matches.length > 0) {
       errorMsg.style.display = 'none';
