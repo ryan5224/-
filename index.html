@@ -90,7 +90,7 @@
       .then(data => { dataPhase2 = data; })
       .catch(err => console.error("第二段資料載入失敗", err));
 
-    // 讀取第一段資料（對應檔名可依需求調整，此處設為 data_phase1.json）
+    // 讀取第一段資料
     fetch('data_phase1.json?t=' + timestamp)
       .then(res => res.json())
       .then(data => { dataPhase1 = data; })
@@ -111,7 +111,6 @@
       btnPhase2.classList.remove('active');
     }
     
-    // 切換時若已有輸入內容，可選擇清空或保留結果（此處自動隱館舊結果避免混淆）
     document.getElementById('resultsContainer').style.display = 'none';
     document.getElementById('errorMsg').style.display = 'none';
   }
@@ -126,10 +125,7 @@
       return;
     }
 
-    // 依照當前選擇的階段決定要搜尋哪一個資料陣列
     const activeDataset = (currentPhase === 'phase2') ? dataPhase2 : dataPhase1;
-
-    // 支援同一末五碼有多筆紀錄
     const matches = activeDataset.filter(item => String(item.bank_last5).trim() === inputVal);
 
     if (matches && matches.length > 0) {
@@ -150,10 +146,20 @@
           badgesHtml = '<span class="no-dates">目前尚無登記訂餐日期</span>';
         }
 
-        // 如果同一帳號查出多筆，顯示「第 N 位登記學生」標籤
         const badgeHeader = matches.length > 1 
           ? `<div class="card-header-badge">第 ${index + 1} 位登記學生</div>` 
           : '';
+
+        // 智慧判斷 balance：支援純數字（自動加千分位與「元」）或直接顯示文字（如 "200已退"）
+        let balanceDisplay = '';
+        let rawBalance = item.balance;
+        if (rawBalance === undefined || rawBalance === null || rawBalance === '') {
+          balanceDisplay = '0 元';
+        } else if (!isNaN(rawBalance)) {
+          balanceDisplay = Number(rawBalance).toLocaleString() + ' 元';
+        } else {
+          balanceDisplay = rawBalance;
+        }
 
         const cardHtml = `
           <div class="student-card">
@@ -181,10 +187,10 @@
               <span class="label">已繳金額：</span>
               <span class="val money-paid">${(Number(item.paid) || 0).toLocaleString()} 元</span>
             </div>
-<div class="result-item">
-  <span class="label">請假應退款項：</span>
-  <span class="val money-refund">${isNaN(item.balance) ? item.balance : (Number(item.balance) || 0).toLocaleString() + ' 元'}</span>
-</div>
+            <div class="result-item">
+              <span class="label">請假應退款項：</span>
+              <span class="val money-refund">${balanceDisplay}</span>
+            </div>
 
             <div class="dates-container">
               <hr class="divider">
